@@ -16,18 +16,33 @@ var server = http.createServer(function(req, res) {
 var io = socketio.listen(server);
 
 io.sockets.on('connection', function (socket) {
-    socket.emit('message', 'Vous êtes bien connecté !');
-    console.log("Connection");
-    socket.broadcast.emit('message', 'Un autre client vient de se connecter ! ');
+    var user = {};
 
-    socket.on('petit_nouveau', function(pseudo) {
-        console.log("Pseudo : " + pseudo);
-        socket.pseudo = pseudo;
+    socket.emit("need-pseudo");
+
+    socket.on("set-pseudo", (pseudo) => {
+        if (pseudo === "") {
+            console.error("Invalid Pseudo");
+            socket.emit("need-pseudo");
+            return;
+        }
+
+        if (user.pseudo)
+            socket.broadcast.emit("user-pseudo-changed", { old : user.pseudo, new : pseudo });
+        else
+            socket.broadcast.emit("user-connection", pseudo);
+
+        user.pseudo = pseudo;
+        socket.emit("pseudo-changed", pseudo);
     });
 
-    socket.on('message', function (message) {
-        console.log(socket.pseudo + ' me parle ! Il me dit : ' + message);
-    }); 
+    socket.on("send-message", (message) => {
+        if (!user.pseudo) {
+            socket.emit("need-pseudo");
+            return;
+        }
+        socket.broadcast.emit("reveive-message", {message : message, pseudo : user.pseudo } );
+    });
 });
 
 

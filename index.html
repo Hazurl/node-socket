@@ -2,34 +2,76 @@
 <html>
     <head>
         <meta charset="utf-8" />
-        <title>Socket.io</title>
+        <title>Chat Experimentation</title>
+        <style>
+            #zone_chat strong {
+                color: white;
+                background-color: black;
+                padding: 2px;
+            }
+        </style>
     </head>
- 
     <body>
-        <h1>Communication avec socket.io !</h1>
+        <h1>Chat</h1>
+        <h2 id="pseudo">Pas encore connecté</h2>
 
-        <p><input type="button" value="Embêter le serveur" id="poke" /></p>
+        <form action="/" method="post" id="formulaire_chat">
+            <input type="text" name="message" id="message" placeholder="Votre message..." size="50" autofocus />
+            <input type="submit" id="envoi_message" value="Envoyer" />
+        </form>
 
+        <section id="zone_chat">
+            
+        </section>
 
         <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
         <script src="/socket.io/socket.io.js"></script>
         <script>
+            function insert_message(pseudo, message) {
+               insert_info('<strong>' + pseudo + '</strong> ' + message);
+            }
+
+            function insert_info (info) {
+                $('#zone_chat').prepend('<p>' + info + '</p>');
+            }
+
             var socket = io.connect('http://localhost:8080');
+            var my_pseudo = "";
 
-            // On demande le pseudo au visiteur...
-            var pseudo = prompt('Quel est votre pseudo ?');
-            // Et on l'envoie avec le signal "petit_nouveau" (pour le différencier de "message")
-            socket.emit('petit_nouveau', pseudo);
+            socket.on("need-pseudo", () => {
+                var pseudo = prompt("Entrer votre pseudo : ");
+                socket.emit("set-pseudo", pseudo);
+            }); 
 
-            // On affiche une boîte de dialogue quand le serveur nous envoie un "message"
-            socket.on('message', function(message) {
-                alert('Le serveur a un message pour vous : ' + message);
-            })
+            socket.on("pseudo-changed", (pseudo) => {
+                $("#pseudo").html("Connecté sous le pseudo : " + pseudo);
+                my_pseudo = pseudo;
+            });
 
-            // Lorsqu'on clique sur le bouton, on envoie un "message" au serveur
-            $('#poke').click(function () {
-                socket.emit('message', 'Salut serveur, ça va ?');
-            })
+            socket.on("user-connection", (pseudo) => {
+                insert_info("Un utilisateur s'est connecté : " + pseudo);
+            });
+
+            socket.on("user-pseudo-changed", (pseudos) => {
+                insert_info(pseudos.old + " à changé son pseudo en " + pseudos.new);
+            });
+
+            socket.on("reveive-message", (mes_user) => {
+                insert_message(mes_user.pseudo, mes_user.message);
+            });
+
+            $('#formulaire_chat').submit(function () {
+                var message = $('#message').val();
+                socket.emit('send-message', message);
+                insert_message(my_pseudo, message);
+                return false;
+            });
+
+            $("#pseudo").on("click", (e) => {
+                var pseudo = prompt("Entrer votre pseudo : ");
+                socket.emit("set-pseudo", pseudo);
+            });
+
         </script>
     </body>
 </html>
