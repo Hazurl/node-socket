@@ -35,10 +35,16 @@
                 $('#zone_chat').prepend('<p>' + info + '</p>');
             }
 
-            var socket = io.connect('http://localhost:8080');
+            var socket = io.connect('http://192.168.1.62:3000');
             var my_pseudo = "";
 
+            socket.on("ping", () => {
+                console.log("Pong !");
+                socket.emit("pong");
+            });
+
             socket.on("need-pseudo", () => {
+                console.log("Event received !");
                 var pseudo = prompt("Entrer votre pseudo : ");
                 socket.emit("set-pseudo", pseudo);
             }); 
@@ -53,10 +59,10 @@
             });
 
             socket.on("user-pseudo-changed", (pseudos) => {
-                insert_info(pseudos.old + " à changé son pseudo en " + pseudos.new);
+                insert_info(pseudos.old + " a changé son pseudo en " + pseudos.new);
             });
 
-            socket.on("reveive-message", (mes_user) => {
+            socket.on("receive-message", (mes_user) => {
                 insert_message(mes_user.pseudo, mes_user.message);
             });
 

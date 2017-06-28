@@ -16,9 +16,17 @@ var server = http.createServer(function(req, res) {
 var io = socketio.listen(server);
 
 io.sockets.on('connection', function (socket) {
+    console.log("Someone just logged in");
     var user = {};
 
     socket.emit("need-pseudo");
+
+    console.log("Ping !");
+    socket.emit("ping !");
+    socket.on("pong", () => {
+        console.log("Pong !");
+    });
+
 
     socket.on("set-pseudo", (pseudo) => {
         if (pseudo === "") {
@@ -41,9 +49,10 @@ io.sockets.on('connection', function (socket) {
             socket.emit("need-pseudo");
             return;
         }
-        socket.broadcast.emit("reveive-message", {message : message, pseudo : user.pseudo } );
+        socket.broadcast.emit("receive-message", {message : message, pseudo : user.pseudo } );
     });
 });
 
 
 server.listen(3000);
+console.log("Listen on port 3000");
